@@ -34,10 +34,12 @@ public class PinEditText extends AppCompatEditText {
 
     public static final String DEFAULT_MASK = "\u25CF";
 
-    protected String mMask = null;
-    protected StringBuilder mMaskChars = null;
-    protected String mSingleCharHint = null;
-    protected int mAnimatedType = 0;
+    protected int mAnimatedType;//动画类型
+    protected String mPinMask;//遮罩, 用于密码, 保护内容安全
+    protected StringBuilder mPinMaskBuilder;
+    protected String mPinHint;//提示
+    protected Drawable mPinBackgroundDrawable;
+
     protected float mSpace = 24; //24 dp by default, space between the lines
     protected float mCharSize;
     protected float mNumChars = 4;
@@ -48,7 +50,6 @@ public class PinEditText extends AppCompatEditText {
     protected Paint mCharPaint;
     protected Paint mLastCharPaint;
     protected Paint mSingleCharPaint;
-    protected Drawable mPinBackground;
     protected Rect mTextHeight = new Rect();
     protected boolean mIsDigitSquare = false;
 
@@ -79,66 +80,55 @@ public class PinEditText extends AppCompatEditText {
 
     public PinEditText(Context context) {
         super(context);
+        initData(context, null, 0);
+        initView(context);
     }
 
     public PinEditText(Context context, AttributeSet attrs) {
         super(context, attrs);
-        init(context, attrs);
+        initData(context, attrs, 0);
+        initView(context);
     }
 
     public PinEditText(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        init(context, attrs);
+        initData(context, attrs, defStyleAttr);
+        initView(context);
     }
 
-    public void setMaxLength(final int maxLength) {
-        mMaxLength = maxLength;
-        mNumChars = maxLength;
-
-        setFilters(new InputFilter[]{new InputFilter.LengthFilter(maxLength)});
-
-        setText(null);
-        invalidate();
-    }
-
-    public void setMask(String mask) {
-        mMask = mask;
-        mMaskChars = null;
-        invalidate();
-    }
-
-    public void setSingleCharHint(String hint) {
-        mSingleCharHint = hint;
-        invalidate();
-    }
-
-    private void init(Context context, AttributeSet attrs) {
+    private void initData(Context context, AttributeSet attrs, int defStyleAttr) {
         float multi = context.getResources().getDisplayMetrics().density;
         mLineStroke = multi * mLineStroke;
         mLineStrokeSelected = multi * mLineStrokeSelected;
         mSpace = multi * mSpace; //convert to pixels for our density
         mTextBottomPadding = multi * mTextBottomPadding; //convert to pixels for our density
 
-        TypedArray ta = context.obtainStyledAttributes(attrs, R.styleable.PinEditText, 0, 0);
-        try {
-            TypedValue outValue = new TypedValue();
-            ta.getValue(R.styleable.PinEditText_pin_animation_type, outValue);
-            mAnimatedType = outValue.data;
-            mMask = ta.getString(R.styleable.PinEditText_pin_character_mask);
-            mSingleCharHint = ta.getString(R.styleable.PinEditText_pin_repeated_hint);
+        if (attrs != null) {
+            TypedArray ta = context.obtainStyledAttributes(attrs, R.styleable.PinEditText, defStyleAttr, 0);
+
+            TypedValue animatedTypeValue = new TypedValue();
+            ta.getValue(R.styleable.PinEditText_pet_animation_type, animatedTypeValue);
+            mAnimatedType = animatedTypeValue.data;
+            mPinMask = ta.getString(R.styleable.PinEditText_pet_pin_mask);
+            mPinHint = ta.getString(R.styleable.PinEditText_pet_pin_hint);
+            mPinBackgroundDrawable = ta.getDrawable(R.styleable.PinEditText_pet_pin_background_drawable);
+
             mLineStroke = ta.getDimension(R.styleable.PinEditText_pin_line_stroke, mLineStroke);
             mLineStrokeSelected = ta.getDimension(R.styleable.PinEditText_pin_line_stroke_selected, mLineStrokeSelected);
             mSpace = ta.getDimension(R.styleable.PinEditText_pin_character_spacing, mSpace);
             mTextBottomPadding = ta.getDimension(R.styleable.PinEditText_pin_text_bottom_padding, mTextBottomPadding);
             mIsDigitSquare = ta.getBoolean(R.styleable.PinEditText_pin_background_is_square, mIsDigitSquare);
-            mPinBackground = ta.getDrawable(R.styleable.PinEditText_pin_background_drawable);
+
             ColorStateList colors = ta.getColorStateList(R.styleable.PinEditText_pin_line_colors);
             if (colors != null) {
                 mColorStates = colors;
             }
 
-        } finally {
             ta.recycle();
+        }
+
+        if (isPassword() && mPinMask == null) {
+            mPinMask = DEFAULT_MASK;
         }
 
         mCharPaint = new Paint(getPaint());
@@ -200,15 +190,8 @@ public class PinEditText extends AppCompatEditText {
             }
         });
 
-        //If input type is password and no mask is set, use a default mask
-        if ((getInputType() & InputType.TYPE_TEXT_VARIATION_PASSWORD) == InputType.TYPE_TEXT_VARIATION_PASSWORD && TextUtils.isEmpty(mMask)) {
-            mMask = DEFAULT_MASK;
-        } else if ((getInputType() & InputType.TYPE_NUMBER_VARIATION_PASSWORD) == InputType.TYPE_NUMBER_VARIATION_PASSWORD && TextUtils.isEmpty(mMask)) {
-            mMask = DEFAULT_MASK;
-        }
-
-        if (!TextUtils.isEmpty(mMask)) {
-            mMaskChars = getMaskChars();
+        if (!TextUtils.isEmpty(mPinMask)) {
+            mPinMaskBuilder = getMaskChars();
         }
 
         //Height of the characters, used if there is a background drawable
@@ -217,21 +200,39 @@ public class PinEditText extends AppCompatEditText {
         mAnimate = mAnimatedType > -1;
     }
 
+    private void initView(Context context) {
+    }
+
+    public void setMaxLength(final int maxLength) {
+        mMaxLength = maxLength;
+        mNumChars = maxLength;
+
+        setFilters(new InputFilter[]{new InputFilter.LengthFilter(maxLength)});
+
+        setText(null);
+        invalidate();
+    }
+
+    public void setMask(String mask) {
+        mPinMask = mask;
+        mPinMaskBuilder = null;
+        invalidate();
+    }
+
+    public void setCharHint(String hint) {
+        mPinHint = hint;
+        invalidate();
+    }
+
     @Override
     public void setInputType(int type) {
         super.setInputType(type);
+        if (isPassword() && mPinMask == null) {
+            setMask(DEFAULT_MASK);
 
-        if ((type & InputType.TYPE_TEXT_VARIATION_PASSWORD) == InputType.TYPE_TEXT_VARIATION_PASSWORD
-                || (type & InputType.TYPE_NUMBER_VARIATION_PASSWORD) == InputType.TYPE_NUMBER_VARIATION_PASSWORD) {
-            // If input type is password and no mask is set, use a default mask
-            if (TextUtils.isEmpty(mMask)) {
-                setMask(DEFAULT_MASK);
-            }
         } else {
-            // If input type is not password, remove mask
             setMask(null);
         }
-
     }
 
     @Override
@@ -264,10 +265,11 @@ public class PinEditText extends AppCompatEditText {
         }
         for (int i = 0; i < mNumChars; i++) {
             mLineCoords[i] = new RectF(startX, bottom, startX + mCharSize, bottom);
-            if (mPinBackground != null) {
+            if (mPinBackgroundDrawable != null) {
                 if (mIsDigitSquare) {
                     mLineCoords[i].top = getPaddingTop();
                     mLineCoords[i].right = startX + mLineCoords[i].width();
+
                 } else {
                     mLineCoords[i].top -= mTextHeight.height() + mTextBottomPadding * 2;
                 }
@@ -340,19 +342,19 @@ public class PinEditText extends AppCompatEditText {
         getPaint().getTextWidths(text, 0, textLength, textWidths);
 
         float hintWidth = 0;
-        if (mSingleCharHint != null) {
-            float[] hintWidths = new float[mSingleCharHint.length()];
-            getPaint().getTextWidths(mSingleCharHint, hintWidths);
+        if (mPinHint != null) {
+            float[] hintWidths = new float[mPinHint.length()];
+            getPaint().getTextWidths(mPinHint, hintWidths);
             for (float i : hintWidths) {
                 hintWidth += i;
             }
         }
         for (int i = 0; i < mNumChars; i++) {
             //If a background for the pin characters is specified, it should be behind the characters.
-            if (mPinBackground != null) {
+            if (mPinBackgroundDrawable != null) {
                 updateDrawableState(i < textLength, i == textLength);
-                mPinBackground.setBounds((int) mLineCoords[i].left, (int) mLineCoords[i].top, (int) mLineCoords[i].right, (int) mLineCoords[i].bottom);
-                mPinBackground.draw(canvas);
+                mPinBackgroundDrawable.setBounds((int) mLineCoords[i].left, (int) mLineCoords[i].top, (int) mLineCoords[i].right, (int) mLineCoords[i].bottom);
+                mPinBackgroundDrawable.draw(canvas);
             }
             float middle = mLineCoords[i].left + mCharSize / 2;
             if (textLength > i) {
@@ -361,40 +363,56 @@ public class PinEditText extends AppCompatEditText {
                 } else {
                     canvas.drawText(text, i, i + 1, middle - textWidths[i] / 2, mCharBottom[i], mLastCharPaint);
                 }
-            } else if (mSingleCharHint != null) {
-                canvas.drawText(mSingleCharHint, middle - hintWidth / 2, mCharBottom[i], mSingleCharPaint);
+            } else if (mPinHint != null) {
+                canvas.drawText(mPinHint, middle - hintWidth / 2, mCharBottom[i], mSingleCharPaint);
             }
             //The lines should be in front of the text (because that's how I want it).
-            if (mPinBackground == null) {
+            if (mPinBackgroundDrawable == null) {
                 updateColorForLines(i <= textLength);
                 canvas.drawLine(mLineCoords[i].left, mLineCoords[i].top, mLineCoords[i].right, mLineCoords[i].bottom, mLinesPaint);
             }
         }
     }
 
+    private boolean isPassword() {
+        if ((getInputType() & InputType.TYPE_TEXT_VARIATION_PASSWORD) == InputType.TYPE_TEXT_VARIATION_PASSWORD) {
+            return true;
+
+        } else if ((getInputType() & InputType.TYPE_NUMBER_VARIATION_PASSWORD) == InputType.TYPE_NUMBER_VARIATION_PASSWORD) {
+            return true;
+
+        } else {
+            return false;
+        }
+    }
+
     private CharSequence getFullText() {
-        if (TextUtils.isEmpty(mMask)) {
+        if (TextUtils.isEmpty(mPinMask)) {
             return getText();
+
         } else {
             return getMaskChars();
         }
     }
 
     private StringBuilder getMaskChars() {
-        if (mMaskChars == null) {
-            mMaskChars = new StringBuilder();
+        if (mPinMaskBuilder == null) {
+            mPinMaskBuilder = new StringBuilder();
         }
-        int textLength = getText().length();
-        while (mMaskChars.length() != textLength) {
-            if (mMaskChars.length() < textLength) {
-                mMaskChars.append(mMask);
+
+        int length = getText().length();
+
+        while (mPinMaskBuilder.length() != length) {
+            if (mPinMaskBuilder.length() < length) {
+                mPinMaskBuilder.append(mPinMask);
+
             } else {
-                mMaskChars.deleteCharAt(mMaskChars.length() - 1);
+                mPinMaskBuilder.deleteCharAt(mPinMaskBuilder.length() - 1);
             }
         }
-        return mMaskChars;
-    }
 
+        return mPinMaskBuilder;
+    }
 
     private int getColorForState(int... states) {
         return mColorStates.getColorForState(states, Color.GRAY);
@@ -421,19 +439,19 @@ public class PinEditText extends AppCompatEditText {
 
     protected void updateDrawableState(boolean hasText, boolean isNext) {
         if (mHasError) {
-            mPinBackground.setState(new int[]{android.R.attr.state_active});
+            mPinBackgroundDrawable.setState(new int[]{android.R.attr.state_active});
         } else if (isFocused()) {
-            mPinBackground.setState(new int[]{android.R.attr.state_focused});
+            mPinBackgroundDrawable.setState(new int[]{android.R.attr.state_focused});
             if (isNext) {
-                mPinBackground.setState(new int[]{android.R.attr.state_focused, android.R.attr.state_selected});
+                mPinBackgroundDrawable.setState(new int[]{android.R.attr.state_focused, android.R.attr.state_selected});
             } else if (hasText) {
-                mPinBackground.setState(new int[]{android.R.attr.state_focused, android.R.attr.state_checked});
+                mPinBackgroundDrawable.setState(new int[]{android.R.attr.state_focused, android.R.attr.state_checked});
             }
         } else {
             if (hasText) {
-                mPinBackground.setState(new int[]{-android.R.attr.state_focused, android.R.attr.state_checked});
+                mPinBackgroundDrawable.setState(new int[]{-android.R.attr.state_focused, android.R.attr.state_checked});
             } else {
-                mPinBackground.setState(new int[]{-android.R.attr.state_focused});
+                mPinBackgroundDrawable.setState(new int[]{-android.R.attr.state_focused});
             }
         }
     }
@@ -486,7 +504,7 @@ public class PinEditText extends AppCompatEditText {
     }
 
     public void setPinBackground(Drawable pinBackground) {
-        mPinBackground = pinBackground;
+        mPinBackgroundDrawable = pinBackground;
         invalidate();
     }
 

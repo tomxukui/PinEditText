@@ -2,20 +2,22 @@
 <resources>
 
     <declare-styleable name="PinEditText">
-        <attr name="pin_animation_type" format="enum">
+        <attr name="pet_animation_type" format="enum">
             <enum name="pop_in" value="0" />
             <enum name="from_bottom" value="1" />
             <enum name="none" value="-1" />
         </attr>
-        <attr name="pin_character_mask" format="string" />
-        <attr name="pin_repeated_hint" format="string" />
+        <attr name="pet_pin_mask" format="string" />
+        <attr name="pet_pin_hint" format="string" />
+        <attr name="pet_pin_background_drawable" format="reference" />
+        <attr name="pin_background_is_square" format="boolean" />
+
+
         <attr name="pin_line_stroke" format="dimension" />
         <attr name="pin_line_stroke_selected" format="dimension" />
         <attr name="pin_character_spacing" format="dimension" />
         <attr name="pin_text_bottom_padding" format="dimension" />
         <attr name="pin_line_colors" format="color" />
-        <attr name="pin_background_drawable" format="reference" />
-        <attr name="pin_background_is_square" format="boolean" />
     </declare-styleable>
 
 </resources>
