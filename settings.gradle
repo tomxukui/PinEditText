@@ -1,0 +1,3 @@
+rootProject.name='PinEditText'
+include ':app'
+include ':pinedittext'
