@@ -1,7 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:padding="50dp">
+
+    <com.xukui.library.pinedittext.PinEditText
+        android:id="@+id/et_code"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:cursorVisible="false"
+        android:digits="1234567890"
+        android:inputType="number"
+        android:layoutDirection="ltr"
+        android:maxLength="4"
+        android:textIsSelectable="false"
+        android:textSize="30sp"
+        android:textStyle="bold"
+        app:pin_animation_type="pop_in"
+        app:pin_background_drawable="@drawable/bg_sms_edit"
+        app:pin_background_is_square="true"
+        app:pin_text_bottom_padding="25dp" />
 
 </LinearLayout>
