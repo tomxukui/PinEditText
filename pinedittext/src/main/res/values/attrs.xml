@@ -10,7 +10,6 @@
         <attr name="pet_pin_mask" format="string" />
         <attr name="pet_pin_hint" format="string" />
         <attr name="pet_pin_background_drawable" format="reference" />
-        <attr name="pin_background_is_square" format="boolean" />
 
 
         <attr name="pin_line_stroke" format="dimension" />

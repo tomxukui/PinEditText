@@ -20,7 +20,6 @@
         app:pet_animation_type="pop_in"
         app:pet_pin_background_drawable="@drawable/bg_sms_edit"
 
-        app:pin_background_is_square="true"
         app:pin_text_bottom_padding="25dp" />
 
     <com.xukui.library.pinedittext.PinEditText
@@ -39,7 +38,6 @@
         app:pet_pin_mask="*"
         app:pet_pin_background_drawable="@drawable/bg_sms_edit"
 
-        app:pin_background_is_square="true"
         app:pin_text_bottom_padding="25dp" />
 
     <com.xukui.library.pinedittext.PinEditText
@@ -58,8 +56,23 @@
         app:pet_pin_hint="LK"
         app:pet_pin_background_drawable="@drawable/bg_sms_edit"
 
+        app:pin_text_bottom_padding="25dp" />
 
-        app:pin_background_is_square="true"
+    <com.xukui.library.pinedittext.PinEditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:cursorVisible="false"
+        android:digits="1234567890"
+        android:inputType="number"
+        android:maxLength="4"
+        android:textIsSelectable="false"
+        android:textSize="30sp"
+        android:textStyle="bold"
+
+        app:pet_animation_type="from_bottom"
+        app:pet_pin_hint="LK"
+
         app:pin_text_bottom_padding="25dp" />
 
 </LinearLayout>
